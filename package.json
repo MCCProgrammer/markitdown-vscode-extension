@@ -1,0 +1,100 @@
+{
+  "name": "markitdown-converter",
+  "displayName": "MarkItDown Converter",
+  "description": "Convert PDF, DOCX, XLSX, PPTX, HTML, images and more to clean Markdown using Microsoft's MarkItDown — with token savings stats for AI workflows.",
+  "version": "0.1.0",
+  "publisher": "your-publisher-id",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Formatters"
+  ],
+  "keywords": [
+    "markdown",
+    "markitdown",
+    "converter",
+    "pdf",
+    "docx",
+    "tokens",
+    "llm",
+    "ai"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "markitdown.openPanel",
+        "title": "MarkItDown: Open Converter Panel"
+      },
+      {
+        "command": "markitdown.convertFile",
+        "title": "MarkItDown: Convert to Markdown"
+      },
+      {
+        "command": "markitdown.checkSetup",
+        "title": "MarkItDown: Check Setup (Python & MarkItDown)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "markitdown.convertFile",
+          "when": "resourceExtname =~ /\\.(pdf|docx|doc|xlsx|xls|pptx|ppt|html|htm|csv|json|xml|epub|msg|zip|jpg|jpeg|png|mp3|wav)$/i",
+          "group": "7_modification"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "markitdown.convertFile",
+          "when": "resourceExtname =~ /\\.(pdf|docx|doc|xlsx|xls|pptx|ppt|html|htm|csv|json|xml|epub|msg|zip)$/i",
+          "group": "1_run"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "MarkItDown Converter",
+      "properties": {
+        "markitdown.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Python executable. Leave empty to auto-detect (python3, python, py)."
+        },
+        "markitdown.outputMode": {
+          "type": "string",
+          "enum": [
+            "sameFolder",
+            "openInEditor",
+            "ask"
+          ],
+          "default": "sameFolder",
+          "description": "Where to put the converted Markdown: save next to the original file, open in a new editor tab, or ask every time."
+        },
+        "markitdown.showTokenStats": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show token count (and savings vs. the raw file, when measurable) after each conversion."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "gpt-tokenizer": "^2.4.0"
+  }
+}
