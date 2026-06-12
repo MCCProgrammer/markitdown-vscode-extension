@@ -3,51 +3,56 @@ import * as path from "path";
 import { encode } from "gpt-tokenizer";
 
 export interface TokenStats {
-  /** Tokens in the converted markdown */
   markdownTokens: number;
-  /** Tokens in the raw file content — only for text-based formats */
   rawTokens?: number;
-  /** rawTokens - markdownTokens, when rawTokens is measurable */
   saved?: number;
-  /** Percentage saved, when measurable */
   savedPercent?: number;
+  /** Original file size in bytes — always populated when the file is readable */
+  fileSize?: number;
 }
 
-/**
- * Formats whose raw bytes are text an LLM could plausibly have ingested
- * directly — for these, "tokens saved" is an honest before/after comparison.
- * For binary formats (PDF, DOCX, …) the raw bytes were never LLM input,
- * so we only report the markdown's token count, not a fake "savings".
- */
 const TEXT_EXTENSIONS = new Set([".html", ".htm", ".xml", ".csv", ".tsv", ".json", ".txt", ".md"]);
 
 export function countTokens(text: string): number {
   return encode(text).length;
 }
 
-export function computeStats(sourceFile: string, markdown: string): TokenStats {
+export function computeStats(sourceFile: string, markdown: string, rawText?: string): TokenStats {
   const markdownTokens = countTokens(markdown);
   const ext = path.extname(sourceFile).toLowerCase();
 
-  if (!TEXT_EXTENSIONS.has(ext)) {
-    return { markdownTokens };
-  }
+  let fileSize: number | undefined;
+  try { fileSize = fs.statSync(sourceFile).size; } catch { /* ignore */ }
 
-  try {
-    const raw = fs.readFileSync(sourceFile, "utf8");
-    const rawTokens = countTokens(raw);
+  // For text formats, compare raw file bytes vs markdown output.
+  // For binary formats, use the extracted raw text if available.
+  const rawSource = TEXT_EXTENSIONS.has(ext)
+    ? (() => { try { return fs.readFileSync(sourceFile, "utf8"); } catch { return undefined; } })()
+    : rawText?.trim() || undefined;
+
+  if (rawSource) {
+    const rawTokens = countTokens(rawSource);
     const saved = rawTokens - markdownTokens;
     const savedPercent = rawTokens > 0 ? Math.round((saved / rawTokens) * 100) : 0;
-    return { markdownTokens, rawTokens, saved, savedPercent };
-  } catch {
-    return { markdownTokens };
+    return { markdownTokens, rawTokens, saved, savedPercent, fileSize };
   }
+
+  return { markdownTokens, fileSize };
+}
+
+function fmtBytes(bytes: number): string {
+  if (bytes < 1024) { return `${bytes} B`; }
+  if (bytes < 1024 * 1024) { return `${Math.round(bytes / 1024)} KB`; }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function formatStats(stats: TokenStats): string {
   const fmt = (n: number) => n.toLocaleString("en-US");
   if (stats.rawTokens !== undefined && stats.saved !== undefined && stats.saved > 0) {
     return `${fmt(stats.rawTokens)} → ${fmt(stats.markdownTokens)} tokens (${stats.savedPercent}% saved)`;
+  }
+  if (stats.fileSize !== undefined && stats.rawTokens === undefined) {
+    return `${fmtBytes(stats.fileSize)} → ${fmt(stats.markdownTokens)} markdown tokens`;
   }
   return `${fmt(stats.markdownTokens)} tokens`;
 }

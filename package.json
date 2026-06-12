@@ -1,26 +1,44 @@
 {
-  "name": "markitdown-converter",
-  "displayName": "MarkItDown Converter",
-  "description": "Convert PDF, DOCX, XLSX, PPTX, HTML, images and more to clean Markdown using Microsoft's MarkItDown — with token savings stats for AI workflows.",
+  "name": "markify-ai",
+  "displayName": "Markify — Document to AI-Ready Markdown",
+  "description": "Convert PDF, DOCX, XLSX, PPTX, HTML, images and 20+ formats to clean Markdown using Microsoft's MarkItDown. Runs 100% locally. Shows token savings for every conversion.",
   "version": "0.1.0",
-  "publisher": "your-publisher-id",
+  "publisher": "MCCProgrammer",
   "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MCCProgrammer/markify-ai"
+  },
+  "bugs": {
+    "url": "https://github.com/MCCProgrammer/markify-ai/issues"
+  },
+  "homepage": "https://github.com/MCCProgrammer/markify-ai#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
     "Other",
-    "Formatters"
+    "Formatters",
+    "Data Science"
   ],
   "keywords": [
     "markdown",
     "markitdown",
-    "converter",
-    "pdf",
-    "docx",
-    "tokens",
+    "pdf to markdown",
+    "docx to markdown",
+    "ai",
     "llm",
-    "ai"
+    "tokens",
+    "converter",
+    "document",
+    "openai",
+    "context",
+    "rag"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -30,15 +48,15 @@
     "commands": [
       {
         "command": "markitdown.openPanel",
-        "title": "MarkItDown: Open Converter Panel"
+        "title": "Markify: Open Converter Panel"
       },
       {
         "command": "markitdown.convertFile",
-        "title": "MarkItDown: Convert to Markdown"
+        "title": "Markify: Convert to Markdown"
       },
       {
         "command": "markitdown.checkSetup",
-        "title": "MarkItDown: Check Setup (Python & MarkItDown)"
+        "title": "Markify: Check Setup (Python & MarkItDown)"
       }
     ],
     "menus": {
@@ -58,27 +76,23 @@
       ]
     },
     "configuration": {
-      "title": "MarkItDown Converter",
+      "title": "Markify",
       "properties": {
         "markitdown.pythonPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the Python executable. Leave empty to auto-detect (python3, python, py)."
+          "description": "Path to the Python executable. Leave empty to auto-detect (tries python3, Homebrew, python3.12, python3.11, etc.)."
         },
         "markitdown.outputMode": {
           "type": "string",
-          "enum": [
-            "sameFolder",
-            "openInEditor",
-            "ask"
-          ],
+          "enum": ["sameFolder", "openInEditor", "ask"],
           "default": "sameFolder",
-          "description": "Where to put the converted Markdown: save next to the original file, open in a new editor tab, or ask every time."
+          "description": "Where to save converted Markdown: next to the original file, open in a new tab, or ask every time."
         },
         "markitdown.showTokenStats": {
           "type": "boolean",
           "default": true,
-          "description": "Show token count (and savings vs. the raw file, when measurable) after each conversion."
+          "description": "Show token count and savings vs. the raw file after each conversion."
         }
       }
     }
@@ -87,11 +101,13 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "vscode:prepublish": "npm run compile",
-    "package": "vsce package"
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
     "typescript": "^5.4.0"
   },
   "dependencies": {

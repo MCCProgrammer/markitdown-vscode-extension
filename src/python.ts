@@ -6,6 +6,8 @@ export interface PythonEnv {
   python: string;
   /** True if the markitdown package is importable in that environment */
   hasMarkitdown: boolean;
+  /** Parsed version string, e.g. "3.11" */
+  pythonVersion: string;
 }
 
 function run(cmd: string, args: string[], timeoutMs = 15000): Promise<{ ok: boolean; stdout: string; stderr: string }> {
@@ -16,35 +18,48 @@ function run(cmd: string, args: string[], timeoutMs = 15000): Promise<{ ok: bool
   });
 }
 
-/** Candidate python commands, configured path first. */
+/** Candidate python commands — configured path first, then common locations. */
 function pythonCandidates(): string[] {
   const configured = vscode.workspace.getConfiguration("markitdown").get<string>("pythonPath")?.trim();
-  const candidates = ["python3", "python", "py"];
+  const candidates = [
+    "python3",
+    "/opt/homebrew/bin/python3",   // Homebrew (Apple Silicon)
+    "/usr/local/bin/python3",      // Homebrew (Intel)
+    "python3.13", "python3.12", "python3.11", "python3.10",
+    "python", "py",
+  ];
   return configured ? [configured, ...candidates] : candidates;
 }
 
-/**
- * Find a working Python and check whether `markitdown` is importable in it.
- * Checking the *module* (not a global `markitdown` binary) means we use the
- * same environment we'd install into, avoiding PATH mismatches.
- */
-export async function detectPython(): Promise<PythonEnv | undefined> {
-  for (const candidate of pythonCandidates()) {
-    const version = await run(candidate, ["--version"]);
-    if (!version.ok) {
-      continue;
-    }
-    const check = await run(candidate, ["-c", "import markitdown; print(markitdown.__version__ if hasattr(markitdown,'__version__') else 'ok')"]);
-    return { python: candidate, hasMarkitdown: check.ok };
-  }
-  return undefined;
+function parseVersion(output: string): string {
+  const m = output.match(/Python (\d+\.\d+)/);
+  return m ? m[1] : "?";
 }
 
-/**
- * Make sure Python + markitdown are available, guiding the user through
- * installation if needed. Returns a ready-to-use environment or undefined
- * if the user declined / setup failed.
- */
+export function meetsVersionRequirement(version: string): boolean {
+  const [major, minor] = version.split(".").map(Number);
+  return major > 3 || (major === 3 && minor >= 10);
+}
+
+export async function detectPython(): Promise<PythonEnv | undefined> {
+  let fallback: PythonEnv | undefined;
+  for (const candidate of pythonCandidates()) {
+    const versionResult = await run(candidate, ["--version"]);
+    if (!versionResult.ok) {
+      continue;
+    }
+    const pythonVersion = parseVersion(versionResult.stdout || versionResult.stderr);
+    const check = await run(candidate, ["-c", "from markitdown import MarkItDown"]);
+    if (check.ok) {
+      return { python: candidate, hasMarkitdown: true, pythonVersion };
+    }
+    if (!fallback) {
+      fallback = { python: candidate, hasMarkitdown: false, pythonVersion };
+    }
+  }
+  return fallback;
+}
+
 export async function ensureReady(context: vscode.ExtensionContext): Promise<PythonEnv | undefined> {
   const env = await detectPython();
 
@@ -66,9 +81,23 @@ export async function ensureReady(context: vscode.ExtensionContext): Promise<Pyt
     return env;
   }
 
+  if (!meetsVersionRequirement(env.pythonVersion)) {
+    const choice = await vscode.window.showErrorMessage(
+      `Python ${env.pythonVersion} was found but markitdown requires Python ≥ 3.10. Install a newer Python or set markitdown.pythonPath to point to one.`,
+      "Download Python 3.12",
+      "Set Python Path"
+    );
+    if (choice === "Download Python 3.12") {
+      vscode.env.openExternal(vscode.Uri.parse("https://www.python.org/downloads/"));
+    } else if (choice === "Set Python Path") {
+      vscode.commands.executeCommand("workbench.action.openSettings", "markitdown.pythonPath");
+    }
+    return undefined;
+  }
+
   const choice = await vscode.window.showInformationMessage(
     "The MarkItDown Python package is not installed in the detected environment. Install it now?",
-    { detail: `Will run: ${env.python} -m pip install "markitdown[all]"`, modal: true },
+    { detail: `Will run: ${env.python} -m pip install --upgrade "markitdown[all]"`, modal: true },
     "Install"
   );
   if (choice !== "Install") {
@@ -77,15 +106,7 @@ export async function ensureReady(context: vscode.ExtensionContext): Promise<Pyt
 
   const installed = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: "Installing markitdown[all] (this can take a minute)…" },
-    async () => {
-      const result = await run(env.python, ["-m", "pip", "install", "--user", "markitdown[all]"], 5 * 60 * 1000);
-      if (!result.ok) {
-        // Some environments (e.g. Debian/Ubuntu system Python) refuse --user installs
-        // or are externally managed; surface the real error and offer the terminal.
-        return result;
-      }
-      return result;
-    }
+    () => run(env.python, ["-m", "pip", "install", "--upgrade", "--user", "markitdown[all]"], 5 * 60 * 1000)
   );
 
   if (!installed.ok) {
@@ -96,7 +117,7 @@ export async function ensureReady(context: vscode.ExtensionContext): Promise<Pyt
     if (fallback === "Open Terminal") {
       const term = vscode.window.createTerminal("MarkItDown install");
       term.show();
-      term.sendText(`${env.python} -m pip install --user "markitdown[all]"`, false);
+      term.sendText(`${env.python} -m pip install --upgrade --user "markitdown[all]"`, false);
     }
     return undefined;
   }
@@ -106,6 +127,6 @@ export async function ensureReady(context: vscode.ExtensionContext): Promise<Pyt
     vscode.window.showInformationMessage("MarkItDown installed successfully ✅");
     return recheck;
   }
-  vscode.window.showErrorMessage("Install finished but the markitdown module still isn't importable. Check your Python environment.");
+  vscode.window.showErrorMessage("Install finished but markitdown still isn't importable. Check your Python environment.");
   return undefined;
 }

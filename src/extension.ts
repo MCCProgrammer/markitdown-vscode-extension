@@ -73,7 +73,7 @@ async function convertCommand(context: vscode.ExtensionContext, uri?: vscode.Uri
     // Token stats
     let statsSuffix = "";
     if (config.get<boolean>("showTokenStats", true)) {
-      const stats = computeStats(source.fsPath, result.markdown);
+      const stats = computeStats(source.fsPath, result.markdown, result.rawText);
       statsSuffix = ` — ${formatStats(stats)}`;
     }
 
@@ -101,7 +101,7 @@ async function convertCommand(context: vscode.ExtensionContext, uri?: vscode.Uri
     }
 
     // sameFolder: write <name>.md next to the source, never overwriting silently
-    const target = await uniqueMarkdownPath(source.fsPath);
+    const target = uniqueMarkdownPath(source.fsPath);
     fs.writeFileSync(target, result.markdown, "utf8");
     const open = await vscode.window.showInformationMessage(
       `Saved ${path.basename(target)}${statsSuffix}`,
@@ -118,7 +118,7 @@ async function convertCommand(context: vscode.ExtensionContext, uri?: vscode.Uri
 }
 
 /** foo.pdf → foo.md, or foo-1.md / foo-2.md if it already exists. */
-async function uniqueMarkdownPath(sourcePath: string): Promise<string> {
+function uniqueMarkdownPath(sourcePath: string): string {
   const dir = path.dirname(sourcePath);
   const base = path.basename(sourcePath, path.extname(sourcePath));
   let candidate = path.join(dir, `${base}.md`);
@@ -137,7 +137,7 @@ async function checkSetupCommand() {
     return;
   }
   if (!env.hasMarkitdown) {
-    vscode.window.showWarningMessage(`Python found (${env.python}) but the markitdown package is not installed. Run a conversion to be prompted, or: ${env.python} -m pip install "markitdown[all]"`);
+    vscode.window.showWarningMessage(`Python found (${env.python}) but Microsoft's markitdown package is not installed (an older unrelated package may be present). Run a conversion to be prompted, or: ${env.python} -m pip install --upgrade "markitdown[all]"`);
     return;
   }
   vscode.window.showInformationMessage(`All good ✅  Python: ${env.python}, markitdown: installed.`);

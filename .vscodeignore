@@ -2,5 +2,8 @@
 src/**
 out/**/*.map
 tsconfig.json
+package-lock.json
+.gitignore
+tests/**
 node_modules/typescript/**
 node_modules/@types/**
