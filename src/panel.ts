@@ -29,10 +29,13 @@ export class ConverterPanel {
       ConverterPanel.current.panel.reveal();
       return;
     }
+    const column = vscode.workspace.getConfiguration("markitdown").get<string>("panelColumn", "beside") === "active"
+      ? vscode.ViewColumn.Active
+      : vscode.ViewColumn.Beside;
     const panel = vscode.window.createWebviewPanel(
       "markitdownConverter",
       "MarkItDown Converter",
-      vscode.ViewColumn.One,
+      column,
       { enableScripts: true, retainContextWhenHidden: true }
     );
     ConverterPanel.current = new ConverterPanel(panel, context);
@@ -98,6 +101,9 @@ export class ConverterPanel {
       case "revealFile":
         await vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(msg.path));
         break;
+      case "revealInExplorer":
+        await vscode.commands.executeCommand("revealInExplorer", vscode.Uri.file(msg.path));
+        break;
       case "copyFile": {
         try {
           const content = fs.readFileSync(msg.path as string, "utf8");
@@ -105,6 +111,19 @@ export class ConverterPanel {
           vscode.window.showInformationMessage("Markdown copied to clipboard.");
         } catch {
           vscode.window.showErrorMessage("Could not read the file.");
+        }
+        break;
+      }
+      case "copyText": {
+        await vscode.env.clipboard.writeText(msg.text as string);
+        break;
+      }
+      case "deleteFile": {
+        try {
+          fs.unlinkSync(msg.path as string);
+          this.post({ type: "fileDeleted", path: msg.path });
+        } catch {
+          vscode.window.showErrorMessage("Could not delete the file.");
         }
         break;
       }
@@ -246,7 +265,7 @@ export class ConverterPanel {
       const stats = computeStats(sourcePath, result.markdown, result.rawText);
       const outPath = this.saveMarkdown(displayName, result.markdown, fallbackDir);
       await this.addToTotals(stats);
-      this.post({ type: "convertDone", name: displayName, outPath, stats });
+      this.post({ type: "convertDone", name: displayName, outPath, stats, markdown: result.markdown });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.post({ type: "convertError", name: displayName, message });
@@ -436,8 +455,9 @@ export class ConverterPanel {
   .result-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
   .result-name { font-weight: 600; font-size: .95em; cursor: grab; user-select: none; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .result-name:active { cursor: grabbing; }
-  .result-copy { opacity: 0; transition: opacity .15s; font-size: .75em; padding: 2px 7px; }
-  .result:hover .result-copy { opacity: 1; }
+  .result-copy { font-size: .75em; padding: 2px 7px; }
+  .result-delete { opacity: 0; transition: opacity .15s; font-size: .75em; padding: 2px 7px; background: transparent; color: var(--vscode-testing-iconFailed, #f85149); border: 1px solid var(--vscode-testing-iconFailed, #f85149); margin-top: 4px; }
+  .result:hover .result-delete { opacity: 1; }
   .result-stats { font-size: .82em; opacity: .7; margin-bottom: 3px; }
   .result-stats .ai-note { opacity: .6; font-style: italic; }
   .result-path { font-size: .76em; opacity: .5; font-family: var(--vscode-editor-font-family, monospace); word-break: break-all; margin-bottom: 4px; }
@@ -682,11 +702,10 @@ export class ConverterPanel {
   function buildStatsText(s) {
     if (!s) { return ''; }
     if (s.rawTokens != null) {
-      const arrow = fmt(s.rawTokens) + ' → ' + fmt(s.markdownTokens) + ' tokens';
       if (s.saved > 0) {
-        return arrow + ' (' + s.savedPercent + '% saved)';
+        return fmt(s.rawTokens) + ' → ' + fmt(s.markdownTokens) + ' tokens (' + s.savedPercent + '% saved)';
       }
-      return arrow + ' — <span class="ai-note">markdown adds structure for AI</span>';
+      return '<span class="ai-note">Markdown helps with AI structure</span>';
     }
     if (s.fileSize != null) {
       return fmtBytes(s.fileSize) + ' → ' + fmt(s.markdownTokens) + ' markdown tokens';
@@ -709,29 +728,45 @@ export class ConverterPanel {
     } else {
       el.innerHTML =
         '<div class="result-header">' +
-          '<div class="result-name ok rn" draggable="true" title="Drag to VS Code editor or AI chat"></div>' +
-          '<button class="secondary sm result-copy rc" title="Copy markdown to clipboard">Copy</button>' +
+          '<div class="result-name ok rn" draggable="true" title="Drag to VS Code editor — content also copied to clipboard so you can Cmd+V / Ctrl+V into any AI chat"></div>' +
+          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:0">' +
+            '<button class="secondary sm result-copy rc" title="Copy markdown to clipboard">Copy</button>' +
+            '<button class="secondary sm result-delete rd" title="Delete file">Delete</button>' +
+          '</div>' +
         '</div>' +
         '<div class="result-stats rst"></div>' +
         '<div class="result-path rp"></div>' +
-        '<div class="result-actions"><a class="link ro">Open in editor</a><a class="link rr">Show in folder</a></div>';
+        '<div class="result-actions"><a class="link ro">Open in editor</a><a class="link rr">Show in folder</a><a class="link re" title="Reveals the file in the VS Code Explorer sidebar so you can drag it into any AI chat panel">Reveal in Explorer ↗</a></div>';
 
       const nameEl = el.querySelector('.rn');
       nameEl.textContent = '✔ ' + r.name;
 
-      // Draggable: set file URI so it can be dragged to VS Code editor or browser tabs
+      // Draggable: file URI for VS Code editor; markdown text for other targets.
+      // Also auto-copies to clipboard so Cmd+V works in any AI chat if the drop doesn't land.
       nameEl.addEventListener('dragstart', e => {
         const fileUri = 'file://' + r.outPath;
         e.dataTransfer.setData('text/uri-list', fileUri);
-        e.dataTransfer.setData('text/plain', r.outPath);
+        e.dataTransfer.setData('text/plain', r.markdown || r.outPath);
         e.dataTransfer.effectAllowed = 'copy';
+        if (r.markdown) { vscode.postMessage({ type: "copyText", text: r.markdown }); }
       });
 
       el.querySelector('.rst').innerHTML = buildStatsText(r.stats);
       el.querySelector('.rp').textContent = r.outPath || '';
       el.querySelector('.rc').onclick = () => vscode.postMessage({ type: "copyFile", path: r.outPath });
-      el.querySelector('.ro').onclick = () => vscode.postMessage({ type: "openFile",   path: r.outPath });
-      el.querySelector('.rr').onclick = () => vscode.postMessage({ type: "revealFile", path: r.outPath });
+      el.querySelector('.ro').onclick = () => vscode.postMessage({ type: "openFile",      path: r.outPath });
+      el.querySelector('.rr').onclick = () => vscode.postMessage({ type: "revealFile",    path: r.outPath });
+      el.querySelector('.re').onclick = () => vscode.postMessage({ type: "revealInExplorer", path: r.outPath });
+      const delBtn = el.querySelector('.rd');
+      delBtn.onclick = () => {
+        if (delBtn.dataset.confirm === '1') {
+          vscode.postMessage({ type: "deleteFile", path: r.outPath });
+        } else {
+          delBtn.dataset.confirm = '1';
+          delBtn.textContent = 'Sure?';
+          setTimeout(() => { delBtn.dataset.confirm = '0'; delBtn.textContent = 'Delete'; }, 3000);
+        }
+      };
     }
     return el;
   }
@@ -790,11 +825,17 @@ export class ConverterPanel {
       case "convertStart":
         pushResult({ pending: true, name: m.name });
         break;
-      case "convertDone":
-        updatePending(m.name, { name: m.name, outPath: m.outPath, stats: m.stats });
+      case "convertDone": {
+        const mdName = m.outPath.replace(/\\\\/g, '/').split('/').pop() || m.outPath;
+        updatePending(m.name, { name: mdName, outPath: m.outPath, stats: m.stats, markdown: m.markdown });
         break;
+      }
       case "convertError":
         updatePending(m.name || "File", { error: true, name: m.name || "File", message: m.message });
+        break;
+      case "fileDeleted":
+        allResults = allResults.filter(r => r.outPath !== m.path);
+        renderResults();
         break;
     }
   });

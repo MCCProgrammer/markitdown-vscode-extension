@@ -19,8 +19,9 @@ Every time you paste a document into an AI chat (ChatGPT, Claude, Copilot…), t
 - **Output options** — save next to the original file, open in a new editor tab, or ask every time
 - **Custom output folder** — send all Markdown files to one place
 - **Light / Dark / Auto theme** for the converter panel
-- **Draggable results** — drag a converted `.md` file directly into an AI chat
+- **Draggable results** — drag a converted `.md` file directly into an AI chat (Claude, ChatGPT…) — the Markdown text is pasted automatically
 - **Copy to clipboard** — one click copies the Markdown content
+- **Delete button** — remove the output file with a single click if you no longer need it
 
 ### Supported Formats
 
@@ -102,7 +103,7 @@ For each conversion, Markify counts the tokens in:
 
 Savings = `(before − after) / before × 100%`
 
-When Markdown actually adds structure (e.g. for a JSON file), the stats note that *"markdown can be better for AI"* — because structured Markdown often produces better AI results even if the token count is similar.
+When Markdown actually adds structure (e.g. for a JSON file or a rich PDF), the panel shows *"Markdown helps with AI structure"* — because structured Markdown often produces better AI results even if the raw token count is higher.
 
 ---
 

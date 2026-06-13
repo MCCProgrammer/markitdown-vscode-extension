@@ -1,7 +1,7 @@
 {
-  "name": "markify-ai",
-  "displayName": "Markify — Document to AI-Ready Markdown",
-  "description": "Convert PDF, DOCX, XLSX, PPTX, HTML, images and 20+ formats to clean Markdown using Microsoft's MarkItDown. Runs 100% locally. Shows token savings for every conversion.",
+  "name": "markify",
+  "displayName": "Markify",
+  "description": "Save tokens with markdown",
   "version": "0.1.0",
   "publisher": "MCCProgrammer",
   "license": "MIT",
@@ -12,12 +12,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MCCProgrammer/markify-ai"
+    "url": "https://github.com/MCCProgrammer/markitdown-vscode-extension"
   },
   "bugs": {
-    "url": "https://github.com/MCCProgrammer/markify-ai/issues"
+    "url": "https://github.com/MCCProgrammer/markitdown-vscode-extension/issues"
   },
-  "homepage": "https://github.com/MCCProgrammer/markify-ai#readme",
+  "homepage": "https://github.com/MCCProgrammer/markitdown-vscode-extension#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -93,6 +93,16 @@
           "type": "boolean",
           "default": true,
           "description": "Show token count and savings vs. the raw file after each conversion."
+        },
+        "markitdown.panelColumn": {
+          "type": "string",
+          "enum": ["beside", "active"],
+          "enumDescriptions": [
+            "Open the converter panel beside the current editor (column two)",
+            "Open the converter panel in the same column as the current editor"
+          ],
+          "default": "beside",
+          "description": "Where to open the Markify converter panel."
         }
       }
     }

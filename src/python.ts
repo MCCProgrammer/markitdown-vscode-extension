@@ -10,11 +10,34 @@ export interface PythonEnv {
   pythonVersion: string;
 }
 
-function run(cmd: string, args: string[], timeoutMs = 15000): Promise<{ ok: boolean; stdout: string; stderr: string }> {
+function run(cmd: string, args: string[], timeoutMs = 5000): Promise<{ ok: boolean; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
-    execFile(cmd, args, { timeout: timeoutMs, windowsHide: true, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
-      resolve({ ok: !err, stdout: stdout?.toString() ?? "", stderr: stderr?.toString() ?? "" });
-    });
+    let settled = false;
+    const settle = (result: { ok: boolean; stdout: string; stderr: string }) => {
+      if (!settled) { settled = true; resolve(result); }
+    };
+    const fail = () => settle({ ok: false, stdout: "", stderr: "" });
+
+    let child: import("child_process").ChildProcess;
+    try {
+      // No `timeout` option — we manage it ourselves so we can use SIGKILL
+      child = execFile(cmd, args, { windowsHide: true, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
+        settle({ ok: !err, stdout: stdout?.toString() ?? "", stderr: stderr?.toString() ?? "" });
+      });
+    } catch {
+      fail();
+      return;
+    }
+
+    // After timeoutMs: force-kill (SIGKILL cannot be ignored; on Windows it calls TerminateProcess)
+    const killTimer = setTimeout(() => {
+      try { child.kill("SIGKILL"); } catch { /* already gone */ }
+      // Bail-out: if kill doesn't trigger the execFile callback within 500 ms, resolve anyway
+      setTimeout(fail, 500);
+    }, timeoutMs);
+
+    // Clear kill timer if the process exits normally before the deadline
+    child.on("close", () => clearTimeout(killTimer));
   });
 }
 
@@ -42,22 +65,33 @@ export function meetsVersionRequirement(version: string): boolean {
 }
 
 export async function detectPython(): Promise<PythonEnv | undefined> {
-  let fallback: PythonEnv | undefined;
-  for (const candidate of pythonCandidates()) {
-    const versionResult = await run(candidate, ["--version"]);
-    if (!versionResult.ok) {
-      continue;
-    }
-    const pythonVersion = parseVersion(versionResult.stdout || versionResult.stderr);
-    const check = await run(candidate, ["-c", "from markitdown import MarkItDown"]);
-    if (check.ok) {
-      return { python: candidate, hasMarkitdown: true, pythonVersion };
-    }
-    if (!fallback) {
-      fallback = { python: candidate, hasMarkitdown: false, pythonVersion };
-    }
-  }
-  return fallback;
+  // Check all candidates in parallel so we don't wait 15 s × N sequentially
+  const versionResults = await Promise.all(
+    pythonCandidates().map(async (python) => {
+      const r = await run(python, ["--version"], 5000);
+      if (!r.ok) { return null; }
+      return { python, pythonVersion: parseVersion(r.stdout || r.stderr) };
+    })
+  );
+
+  const working = versionResults.filter((r): r is { python: string; pythonVersion: string } => r !== null);
+  if (working.length === 0) { return undefined; }
+
+  // Check markitdown in parallel across all working Pythons
+  const envs: PythonEnv[] = await Promise.all(
+    working.map(async ({ python, pythonVersion }) => {
+      const check = await run(python, ["-c", "from markitdown import MarkItDown"], 8000);
+      return { python, pythonVersion, hasMarkitdown: check.ok };
+    })
+  );
+
+  // Prefer: has markitdown + version ok > has markitdown > version ok > any
+  return (
+    envs.find(e => e.hasMarkitdown && meetsVersionRequirement(e.pythonVersion)) ??
+    envs.find(e => e.hasMarkitdown) ??
+    envs.find(e => meetsVersionRequirement(e.pythonVersion)) ??
+    envs[0]
+  );
 }
 
 export async function ensureReady(context: vscode.ExtensionContext): Promise<PythonEnv | undefined> {

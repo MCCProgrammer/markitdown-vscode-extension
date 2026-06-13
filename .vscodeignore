@@ -7,3 +7,9 @@ package-lock.json
 tests/**
 node_modules/typescript/**
 node_modules/@types/**
+node_modules/@vscode/**
+node_modules/gpt-tokenizer/esm/**
+node_modules/gpt-tokenizer/dist/**
+node_modules/gpt-tokenizer/src/**
+node_modules/gpt-tokenizer/README.md
+icon_original.png
