@@ -2,8 +2,15 @@
   "name": "markify",
   "displayName": "Markify",
   "description": "Save tokens with markdown",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "MCCProgrammer",
+  "author": {
+    "name": "MCCProgrammer",
+    "email": "contact@mccprogrammer.com"
+  },
+  "sponsor": {
+    "url": "https://ko-fi.com/mccprogrammer"
+  },
   "license": "MIT",
   "icon": "icon.png",
   "galleryBanner": {
@@ -85,7 +92,11 @@
         },
         "markitdown.outputMode": {
           "type": "string",
-          "enum": ["sameFolder", "openInEditor", "ask"],
+          "enum": [
+            "sameFolder",
+            "openInEditor",
+            "ask"
+          ],
           "default": "sameFolder",
           "description": "Where to save converted Markdown: next to the original file, open in a new tab, or ask every time."
         },
@@ -96,7 +107,10 @@
         },
         "markitdown.panelColumn": {
           "type": "string",
-          "enum": ["beside", "active"],
+          "enum": [
+            "beside",
+            "active"
+          ],
           "enumDescriptions": [
             "Open the converter panel beside the current editor (column two)",
             "Open the converter panel in the same column as the current editor"
