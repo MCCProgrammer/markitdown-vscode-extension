@@ -2,6 +2,9 @@
 
 Convert **PDF, DOCX, XLSX, PPTX, HTML, images, audio, and 20+ formats** to clean Markdown — right inside VS Code. Powered by [Microsoft's MarkItDown](https://github.com/microsoft/markitdown). Runs **100% locally**, no internet connection required.
 
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/MCCProgrammer.markify?label=VS%20Code%20Marketplace&logo=visualstudiocode&style=flat-square&color=1f2328)](https://marketplace.visualstudio.com/items?itemName=MCCProgrammer.markify)
+[![Open VSX](https://img.shields.io/open-vsx/v/MCCProgrammer/markify?label=Open%20VSX&logo=eclipseide&style=flat-square&color=1f2328)](https://open-vsx.org/extension/MCCProgrammer/markify)
+
 ---
 
 ## Why Markify?
@@ -36,6 +39,12 @@ Every time you paste a document into an AI chat (ChatGPT, Claude, Copilot…), t
 | Images | JPG, JPEG, PNG (via OCR/vision) |
 | Audio | MP3, WAV (via transcription) |
 | Text | TXT, MD |
+
+---
+
+## Installation
+
+Install it from the [**VS Code Marketplace**](https://marketplace.visualstudio.com/items?itemName=MCCProgrammer.markify), or from [**Open VSX**](https://open-vsx.org/extension/MCCProgrammer/markify) if you use VSCodium, Cursor, Windsurf or another editor based on VS Code.
 
 ---
 
