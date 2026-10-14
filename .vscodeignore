@@ -13,3 +13,4 @@ node_modules/gpt-tokenizer/dist/**
 node_modules/gpt-tokenizer/src/**
 node_modules/gpt-tokenizer/README.md
 icon_original.png
+.github/**

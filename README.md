@@ -5,6 +5,8 @@ Convert **PDF, DOCX, XLSX, PPTX, HTML, images, audio, and 20+ formats** to clean
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/MCCProgrammer.markify?label=VS%20Code%20Marketplace&logo=visualstudiocode&style=flat-square&color=1f2328)](https://marketplace.visualstudio.com/items?itemName=MCCProgrammer.markify)
 [![Open VSX](https://img.shields.io/open-vsx/v/MCCProgrammer/markify?label=Open%20VSX&logo=eclipseide&style=flat-square&color=1f2328)](https://open-vsx.org/extension/MCCProgrammer/markify)
 
+[![Support me on Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square)](https://ko-fi.com/mccprogrammer)
+
 ---
 
 ## Why Markify?
@@ -115,6 +117,12 @@ Savings = `(before − after) / before × 100%`
 When Markdown actually adds structure (e.g. for a JSON file or a rich PDF), the panel shows *"Markdown helps with AI structure"* — because structured Markdown often produces better AI results even if the raw token count is higher.
 
 ---
+
+## 📬 Contact & Support
+
+Questions, feedback or ideas: [contact@mccprogrammer.com](mailto:contact@mccprogrammer.com).
+
+If the extension helps you, a coffee on [Ko-fi](https://ko-fi.com/mccprogrammer) makes a big difference.
 
 ## Attribution & License
 

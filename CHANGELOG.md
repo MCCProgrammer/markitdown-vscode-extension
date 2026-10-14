@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.1] — 2026-10-14
+
+### Added
+- Ko-fi support link (Sponsor button on the store page and in the README) and a contact email: contact@mccprogrammer.com.
+
 ## [0.1.0] — 2026-06-13
 
 ### Initial release
