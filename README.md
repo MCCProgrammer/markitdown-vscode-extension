@@ -4,6 +4,7 @@ Convert **PDF, DOCX, XLSX, PPTX, HTML, images, audio, and 20+ formats** to clean
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/MCCProgrammer.markify?label=VS%20Code%20Marketplace&logo=visualstudiocode&style=flat-square&color=1f2328)](https://marketplace.visualstudio.com/items?itemName=MCCProgrammer.markify)
 [![Open VSX](https://img.shields.io/open-vsx/v/MCCProgrammer/markify?label=Open%20VSX&logo=eclipseide&style=flat-square&color=1f2328)](https://open-vsx.org/extension/MCCProgrammer/markify)
+[![Total installs](https://img.shields.io/endpoint?url=https%3A%2F%2Fextpulse.mccprogrammer.com%2Fp%2Fmccprogrammer%2Fextensions%2F4%2Fbadge.json&label=total%20installs&style=flat-square&color=1f2328)](https://extpulse.mccprogrammer.com/p/mccprogrammer)
 
 [![Support me on Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square)](https://ko-fi.com/mccprogrammer)
 
